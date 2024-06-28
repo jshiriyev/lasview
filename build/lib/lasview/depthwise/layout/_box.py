@@ -26,7 +26,3 @@ class Box():
 	def set_yaxis(self,**kwargs):
 
 		object.__setattr__(self,"yaxis",Axis(**kwargs))
-
-if __name__ == "__main__":
-
-	pass

@@ -1,17 +1,13 @@
 from ._axis import Axis
 
-from ._box import Box
-
-from ._trail import Trail
-
 class Layout():
 
-	def __init__(self,x:int=3,y:int=3,/,depth_loc:int=1,label_loc:str="top",width:tuple[float]=None,height:tuple[float]=None):
+	def __init__(self,trails:int=3,curves:int=3,/,depth_loc:int=1,label_loc:str="top",width:tuple[float]=None,height:tuple[float]=None):
 		"""
 		It sets elements for different trails in the axes:
 
-		x			: number of trails including depth trail in the figure, integer
-		y			: maximum number of curves in trails, integer
+		trails      : number of trails including depth trail in the figure, integer
+		curves 		: maximum number of curves in trails, integer
 
 		depth_loc   : location of depth trail, integer
 		label_loc 	: location of label head, top, bottom or None
@@ -24,40 +20,36 @@ class Layout():
 	
 		"""
 
-		self._trails = [Trail() for _ in range(x)]
+		self._trails = trails
+		self._curves = curves
 
 		self._depth_loc = depth_loc
 		self._label_loc = label_loc
 
-		self._width = self.get_width(width,trails,depth_loc)
-
+		self._width  = self.get_width(width,trails,depth_loc)
 		self._height = self.get_height(height)
 
-	def __len__(self):
-		return self._trails.__len__()
-
-	@property
-	def shape(self):
-		return (self.__len__(),self._curves)
-	
-
-	def set_label(self,**kwargs):
-		self._label = Axis(**kwargs)
+		self._xaxes  = tuple([Axis() for _ in range(trails)])
 
 	def set_depth(self,**kwargs):
 		self._depth = Axis(**kwargs)
 
-	def set_trail(self,index,**kwargs):
+	def set_label(self,**kwargs):
+		self._label = Axis(**kwargs)
 
-		xaxis = Axis(**kwargs)
-
-		self._trail[index] = Trail(
-			head=Box(xaxis=xaxis,yaxis=self._label),
-			body=Box(xaxis=xaxis,yaxis=self._depth),
-			)
+	def set_xaxis(self,index,**kwargs):
+		self._xaxes[index] = Axis(**kwargs)
 
 	def __getitem__(self,index):
 		return self._xaxes[index]
+
+	@property
+	def trails(self):
+		return self._trails
+
+	@property
+	def curves(self):
+		return self._curves
 
 	@property
 	def depth_loc(self):

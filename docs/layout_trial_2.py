@@ -1,7 +1,3 @@
-import sys
-
-sys.path.append(r'C:\\Users\\3876yl\\Documents\\pphys')
-
 from bokeh.plotting import figure, show
 from bokeh.layouts import gridplot
 
@@ -9,9 +5,9 @@ from bokeh.models import ColumnDataSource
 from bokeh.models import Range1d
 from bokeh.models import LinearAxis
 
-from pphys.lasview.depthview.layout._layout import Layout
+from lasview.depthwise import Layout
 
-layout = Layout(ntrail=4,width=(100,250),height=(50,50))
+layout = Layout(4,3,width=(100,250),height=(50,50))
 
 depths = [100, 200, 300, 400, 500]  # Depths in reverse order
 curve1 = [0.1, 0.2, 0.3, 0.4, 0.5]  # Curve values for trail 1
@@ -19,14 +15,17 @@ curve2 = [0.2, 0.3, 0.4, 0.5, 0.6]  # Curve values for trail 2
 
 # source = ColumnDataSource(data=dict(depths=depths,curve1=curve1,curve2=curve2,))
 
+layout.set_depth(flip=True)
+layout.set_label(cycle=3)
+
 heads = []
 bodys = []
 
-for index in range(layout.ntrail):
+for index in range(layout.trails):
 
 	width  = layout.width[index]
 
-	hheight = layout.height[0]*layout.ncurve
+	hheight = layout.height[0]*layout.curves
 	bheight = layout.height[1]*layout.depth.length
 
 	head = figure(width=width,height=int(hheight))
@@ -71,13 +70,14 @@ for index in range(layout.ntrail):
 	body.yaxis.minor_tick_out = 0
 
 	head.min_border_left = 0
-	if index != layout.ntrail-1:
+	if index != layout.trails-1:
 		head.min_border_right = 0
+
 	head.min_border_top = 0
 	head.min_border_bottom = 0
 
 	body.min_border_left = 0
-	if index != layout.ntrail-1:
+	if index != layout.trails-1:
 		body.min_border_right = 0
 	body.min_border_top = 0
 	# body.min_border_bottom = 0
