@@ -2,13 +2,17 @@ from ._box import Box
 
 class Trail():
 
-	def __init__(self,head:Box=None,body:Box=None):
+	def __init__(self,head:Box=None,body:Box=None,width:tuple=None,height:tuple=None):
 
 		object.__setattr__(self,"head",
 			Box() if head is None else head)
 
 		object.__setattr__(self,"body",
 			Box() if body is None else body)
+
+		object.__setattr__(self,"width",width)
+
+		object.__setattr__(self,"height",height)
 
 	def __setattr__(self,key,box:Box):
 

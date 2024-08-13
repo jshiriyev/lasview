@@ -7,6 +7,42 @@ class Skip:
 	lower : int
 	upper : int
 
+class Depth():
+	"""Depth Axis"""
+
+	def __init__(self,spot:int=1,**kwargs):
+		"""spot: location of depth trail, integer"""
+
+		self._spot = spot
+
+		self._axis = Axis(**kwargs)
+
+	@property
+	def spot(self):
+		return self._spot
+
+	@property
+	def axis(self):
+		return self._axis
+
+class Label():
+	"""Label Axis"""
+
+	def __init__(self,spot:str="top",**kwargs):
+		"""spot: location of label head, top, bottom or None"""
+
+		self._spot = spot
+
+		self._axis = Axis(**kwargs)
+
+	@property
+	def spot(self):
+		return self._spot
+
+	@property
+	def axis(self):
+		return self._axis
+
 class Axis():
 
 	def __init__(self,*,cycle=2,minor=None,scale='linear',skip:tuple[int]=None,flip=False):
@@ -39,12 +75,12 @@ class Axis():
 		return self._cycle
 
 	@property
-	def scale(self):
-		return self._scale
-
-	@property
 	def minor(self):
 		return self._minor
+
+	@property
+	def scale(self):
+		return self._scale
 
 	@property
 	def skip(self):
