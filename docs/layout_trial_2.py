@@ -1,23 +1,49 @@
-from bokeh.plotting import figure, show
+from bokeh.plotting import show
+
+from bokeh.layouts import gridplot
+
 import lasio
 
-from lasview.depthwise import Layout
-
-layout = Layout(4,3,width=(100,250),height=(50,50))
-
-# depths = [100, 200, 300, 400, 500]  # Depths in reverse order
-# curve1 = [0.1, 0.2, 0.3, 0.4, 0.5]  # Curve values for trail 1
-# curve2 = [0.2, 0.3, 0.4, 0.5, 0.6]  # Curve values for trail 2
-
-# source = ColumnDataSource(data=dict(depths=depths,curve1=curve1,curve2=curve2,))
+from lasview import depthwise as dw
 
 file = lasio.read('digitized_data.las')
 
-layout.set_depth(flip=True)
-layout.set_label(cycle=3)
+layout = dw.Layout(4,
+	ncurves = 3,
+	depth = dict(values=file['DEPT'],spot=1),
+	width = (100,250),
+	height = (50,50),
+	)
 
-print(layout.trails)
+# print(layout.depth.spot)
+# print(layout.depth.cycle)
+# print(layout.depth.minor)
+# print(layout.depth.scale)
+# print(layout.depth.skip)
 
+print(layout.depth.limit)
 
+print(file['DEPT'])
+
+depth,depth_lim = layout.depth(file['DEPT'],limit=(1280,1350))
+
+limit = dw.layout.axis.Multivar.limit(file['DEPT'],power=-1)
+
+length = dw.layout.axis.Binary.length(limit)
+
+print(dw.layout.axis.Unary.ceil(length/10.))
+
+# print(depth)
+# print(depth_lim)
+
+# grtot,grtot_lim = layout[0](file['GR-TOT'],)
+
+# heads,bodys = dw.bokeh.boot(layout)
+
+# print(file.keys())
+
+# bodys[0].line(grtot,depth)
+
+# grid = gridplot([heads,bodys],toolbar_location=None)
 
 # show(grid)

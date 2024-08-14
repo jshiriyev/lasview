@@ -5,14 +5,14 @@ from bokeh.models import LinearAxis
 
 from bokeh.plotting import figure
 
-def grid(layout):
+def boot(layout):
 
 	heads,bodys = [],[]
 
-	for trail in layout.trails:
+	for index in range(layout.ntrails):
 
-		head = figure(width=trail.width,height=trail.height[0])
-		body = figure(width=trail.width,height=trail.height[1])
+		head = figure(width=layout.width[index],height=layout.height[0])
+		body = figure(width=layout.width[index],height=layout.height[1])
 
 		head.add_layout(LinearAxis(major_label_text_alpha=0),'right')
 		head.add_layout(LinearAxis(major_label_text_alpha=0),'above')
@@ -53,14 +53,14 @@ def grid(layout):
 		body.yaxis.minor_tick_out = 0
 
 		head.min_border_left = 0
-		if index != layout.trails-1:
+		if index != layout.ntrails-1:
 			head.min_border_right = 0
 
 		head.min_border_top = 0
 		head.min_border_bottom = 0
 
 		body.min_border_left = 0
-		if index != layout.trails-1:
+		if index != layout.ntrails-1:
 			body.min_border_right = 0
 		body.min_border_top = 0
 		# body.min_border_bottom = 0
@@ -71,4 +71,4 @@ def grid(layout):
 		heads.append(head)
 		bodys.append(body)
 
-	return gridplot([heads,bodys],toolbar_location=None)
+	return heads,bodys

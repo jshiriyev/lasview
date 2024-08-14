@@ -15,6 +15,9 @@ class Depth():
 
 		self._spot = spot
 
+		if kwargs.get("flip") is None:
+			kwargs["flip"] = True
+
 		self._axis = Axis(**kwargs)
 
 	@property
@@ -45,18 +48,20 @@ class Label():
 
 class Axis():
 
-	def __init__(self,*,cycle=2,minor=None,scale='linear',skip:tuple[int]=None,flip=False):
+	def __init__(self,*,cycle:int=2,minor:range=None,scale:str='linear',skip:tuple[int]=None,flip=False):
 		"""
 		It initializes the axis of box in a track plot:
 
 		cycle 	: sets the number of cycles in the axis
-		scale   : axis scale: linear or logarithmic
-
 		minor 	: sets the frequency of minor ticks
 
+		scale   : axis scale: linear or logarithmic, check the link below
+				https://matplotlib.org/stable/users/explain/axes/axes_scales.html
+				for the available scales in matplotlib.
+
 		skip 	: how many minor units to skip from lower and
-				  upper side, tuple of two integers, values may
-				  change in between (0-9), 0 means no skip.
+				upper side, tuple of two integers, values may
+				change in between (0-9), 0 means no skip.
 		"""
 
 		self._cycle = cycle
@@ -157,8 +162,8 @@ class Axis():
 
 		power = Axis.get_power(limit)
 
-		lower = Axis.floor(lower,power)
-		upper = Axis.ceil(upper,power)
+		lower = Axis.floor(min(limit),power)
+		upper = Axis.ceil(max(limit),power)
 		
 		return (lower,upper)
 
