@@ -1,20 +1,17 @@
 import lasio
 
-from .axis._xaxis import Xaxis
-from .axis._depth import Depth
-from .axis._label import Label
+from ._label import Label
+from ._depth import Depth
 
-from .maps._head import Head
-from .maps._body import Body
-from .maps._trail import Trail
+from ._xaxis import Xaxis
 
 class Layout():
 
-	def __init__(self,ntrails:int=3,ncurves:int=3,width:tuple[float]=None,height:tuple[float]=None):
+	def __init__(self,trail:int=3,cycle:int=3,width:tuple[float]=None,height:tuple[float]=None):
 		"""It sets elements for different trails in the axes:
 
-		ntrails : number of trails including depth trail in the figure, integer
-		ncurves : maximum number of curves in trails, integer
+		trail 	: number of trails including depth trail in the figure, integer
+		cycle 	: maximum number of curves in trails, integer
 
 		width 	: width of trail, len(width) must be equal to either one,
 				two or the number of trails; tuple of float
@@ -22,9 +19,8 @@ class Layout():
 		height 	: height per label row and height per unit distance,
 				len(height) must be equal to two; tuple of float
 		"""
-
-		self.ntrails = ntrails
-		self.ncurves = ncurves
+		self.trail = trail
+		self.cycle = cycle
 
 		# Setting the width tuple of the layout
 		self.width = width
@@ -32,30 +28,46 @@ class Layout():
 		# Setting the height tuple of the layout
 		self.height = height
 
-		self._xaxes = [Xaxis() for _ in range(self.ntrails)]
+		self._xaxes = [Xaxis() for _ in range(self.trail)]
 
 	@property
-	def ntrails(self):
-		return self._ntrails
+	def trail(self):
+		return self._trail
 
-	@ntrails.setter
-	def ntrails(self,value):
-		self._ntrails = value
+	@trail.setter
+	def trail(self,value):
+		self._trail = value
 
 	def __len__(self):
-		return self._ntrails
+		return self._trail
 
 	@property
-	def ncurves(self):
-		return self._ncurves
+	def cycle(self):
+		return self._cycle
 
-	@ncurves.setter
-	def ncurves(self,value):
-		self._ncurves = value
+	@cycle.setter
+	def cycle(self,value):
+		self._cycle = value
+
+	@property
+	def label(self):
+		return self._label
+
+	@label.setter
+	def label(self,value:dict):
+		self._label = Label(**value)
+
+	@property
+	def depth(self):
+		return self._depth
+
+	@depth.setter
+	def depth(self,value:dict):
+		self._depth = Depth(**value)
 	
 	@property
 	def shape(self):
-		return (self.ntrails,self.ncurves)
+		return (self.trail,self.cycle)
 
 	@property
 	def width(self):
@@ -68,17 +80,17 @@ class Layout():
 			self.width = (2,4)
 
 		elif len(value)==1:
-			self._width = value*self.ntrails
+			self._width = value*self.trail
 
 		elif len(value)==2:
 
-			wlist = list((value[1],)*self.ntrails)
+			wlist = list((value[1],)*self.trail)
 
 			wlist[self.depth.spot] = value[0]
 
 			self._width = tuple(wlist)
 
-		elif len(value)==self.ntrails:
+		elif len(value)==self.trail:
 			self._width = value
 
 		else:
@@ -87,19 +99,17 @@ class Layout():
 	@property
 	def height(self):
 
-		head_height = self._height[0]*self.ncurves
+		head_height = self._height[0]*self.cycle
 		body_height = self._height[1]*self.depth.length
 
 		return (head_height,body_height)
 
 	@height.setter
 	def height(self,value:tuple[float]):
-
 		self._height = (1.,0.5) if value is None else value
 
 	@property
 	def size(self):
-		
 		return (sum(self.width),sum(self.height))
 
 	@property
@@ -107,15 +117,12 @@ class Layout():
 		return self._xaxes
 
 	def set(self,index:int,**kwargs):
-
 		self[index] = Xaxis(**kwargs)
 
 	def __setitem__(self,index:int,xaxis:Xaxis):
-
 		self._xaxes[index] = xaxis
 
 	def __getitem__(self,index):
-
 		return self._xaxes[index]
 
 if __name__ == "__main__":

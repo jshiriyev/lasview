@@ -1,39 +1,29 @@
 import lasio
 
+from .layout._label import Label
+from .layout._depth import Depth
+
+from .layout._profile import Profile
+
 from .layout._layout import Layout
 
-class Wizard(Layout):
+def Wizard(lasfile:lasio.LASFile,**kwargs):
 
-	def __init__(self,lasfile:lasio.LASFile,**kwargs):
-		"""It sets elements for different trails in the axes
-		by inheritting everything from layout.
-
-		lasfile : the file that is going to be visualized.
-		"""
-		super().__init__(**kwargs)
-
-		self._lasfile = lasfile
-
-	@property
-	def lasfile(self):
-		return self._lasfile
-
-	@property
-	def depth(self):
-		return self._depth
-
-	@depth.setter
-	def depth(self,value:dict):
-		self._depth = Depth(**value)
-
-	@property
-	def label(self):
-		return self._label
-
-	@label.setter
-	def label(self,value:dict):
-		self._label = Label(**value)
+	layout = Layout(**kwargs)
 	
+def label(cycle:int=3,**kwargs):
+
+	if kwargs.get("limit") is None:
+		kwargs["limit"] = (0,10*cycle)
+
+	return Label(**kwargs)
+
+def depth(array:lasio.CurveItem,lower,upper,power,**kwargs):
+
+	if kwargs.get("limit") is None:
+		kwargs["limit"] = Datum(array,lower,upper,power).limit
+
+	return Depth(**kwargs)
 
 if __name__ == "__main__":
 

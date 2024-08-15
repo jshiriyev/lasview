@@ -2,7 +2,7 @@ from dataclasses import dataclass, field
 
 import numpy
 
-from lasview.depthwise.layout.items._curve import Curve
+from ._unary import Unary
 
 @dataclass(frozen=True)
 class Xaxis:
@@ -19,9 +19,9 @@ class Xaxis:
 			for the available scales in matplotlib.
 
 	spot 	: location of axis in the layout, int
+			index of trail in the layout
 
 	"""
-
 	limit 	: tuple[float] = None
 
 	major 	: int = 10
@@ -57,36 +57,15 @@ class Xaxis:
 
 	@property
 	def length(self):
-		"""Returns the length of axis."""
 		return self.upper-self.lower
 	
 	@property
 	def flip(self):
-		"""Returns the lower and upper end of axis."""
 		return self.limit != tuple(sorted(self.limit))
 
-	def curve(self,data:numpy.ndarray,**kwargs):
-		"""Returns an instance of Curve that carries only data information."""
-		return Curve(data,**kwargs)
-
-	def __call__(self,data:numpy.ndarray,**kwargs):
-		"""Returns the axis values and limit (left,right) for the data."""
-
-		curve = Curve(data,**kwargs)
-
-		if self.scale == "linear":
-			multp = curve.ufloor(self.length/curve.length)
-		elif self.scale == "log10":
-			multp = 10**curve.uceil(-numpy.log10(curve.lower))
-
-		if self.scale == "linear":
-			trail = self.lower+(curve.upper-data if flip else data-curve.lower)*multp
-		elif self.scale == "log10":
-			trail = data*multp
-
-		object.__setattr__(curve,'trail',trail)
-
-		return curve
+	@property
+	def unary(self):
+		return Unary
 
 if __name__ == "__main__":
 
