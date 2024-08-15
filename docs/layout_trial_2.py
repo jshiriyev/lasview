@@ -8,37 +8,42 @@ from lasview import depthwise as dw
 
 file = lasio.read('digitized_data.las')
 
-layout = dw.Layout(4,
+wizard = dw.Wizard(file,
+	ntrails = 4,
 	ncurves = 3,
-	depth = dict(values=file['DEPT'],spot=1),
+	# depth = dict(values=file['DEPT'],spot=1),
 	width = (100,250),
 	height = (50,50),
 	)
 
-# print(layout.depth.spot)
-# print(layout.depth.cycle)
-# print(layout.depth.minor)
-# print(layout.depth.scale)
-# print(layout.depth.skip)
+print(wizard.ntrails)
+print(wizard.ncurves)
+print(wizard.depth.curve)
 
-print(layout.depth.limit)
+# print(wizard.depth.spot)
+# print(wizard.depth.cycle)
+# print(wizard.depth.minor)
+# print(wizard.depth.scale)
+# print(wizard.depth.skip)
 
-print(file['DEPT'])
+# print(wizard.depth.limit)
 
-depth,depth_lim = layout.depth(file['DEPT'],limit=(1280,1350))
+# print(file['DEPT'])
 
-limit = dw.layout.axis.Multivar.limit(file['DEPT'],power=-1)
+# depth,depth_lim = wizard.depth(file['DEPT'],limit=(1280,1350))
 
-length = dw.layout.axis.Binary.length(limit)
+# limit = dw.wizard.axis.Multivar.limit(file['DEPT'],power=-1)
 
-print(dw.layout.axis.Unary.ceil(length/10.))
+# length = dw.wizard.axis.Binary.length(limit)
+
+# print(dw.wizard.axis.Unary.ceil(length/10.))
 
 # print(depth)
 # print(depth_lim)
 
-# grtot,grtot_lim = layout[0](file['GR-TOT'],)
+# grtot,grtot_lim = wizard[0](file['GR-TOT'],)
 
-# heads,bodys = dw.bokeh.boot(layout)
+# heads,bodys = dw.bokeh.boot(wizard)
 
 # print(file.keys())
 

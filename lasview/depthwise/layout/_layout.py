@@ -1,24 +1,20 @@
-from .axis._axis import Axis, Depth, Label
+import lasio
 
-from ._plane import Plane
-from ._trail import Trail
+from .axis._xaxis import Xaxis
+from .axis._depth import Depth
+from .axis._label import Label
+
+from .maps._head import Head
+from .maps._body import Body
+from .maps._trail import Trail
 
 class Layout():
 
-	def __init__(self,ntrails : int = 3,/,
-					  ncurves : int = 3,
-					    depth : dict = None,
-					    label : dict = None,
-					    width : tuple[float] = None,
-					   height : tuple[float] = None,
-					  ):
+	def __init__(self,ntrails:int=3,ncurves:int=3,width:tuple[float]=None,height:tuple[float]=None):
 		"""It sets elements for different trails in the axes:
 
 		ntrails : number of trails including depth trail in the figure, integer
 		ncurves : maximum number of curves in trails, integer
-
-		depth 	: dictionary containing spot (integer) and axis key-value pairs
-		label 	: dictionary containing spot (head, top, bottom or None) and axis key-value pairs
 
 		width 	: width of trail, len(width) must be equal to either one,
 				two or the number of trails; tuple of float
@@ -27,11 +23,8 @@ class Layout():
 				len(height) must be equal to two; tuple of float
 		"""
 
-		self._ntrails = ntrails
-		self._ncurves = ncurves
-
-		self._depth = Depth(**(depth or {}))
-		self._label = Label(**(label or {}))
+		self.ntrails = ntrails
+		self.ncurves = ncurves
 
 		# Setting the width tuple of the layout
 		self.width = width
@@ -39,11 +32,15 @@ class Layout():
 		# Setting the height tuple of the layout
 		self.height = height
 
-		self._xaxes = [Axis() for _ in range(self.ntrails)]
+		self._xaxes = [Xaxis() for _ in range(self.ntrails)]
 
 	@property
 	def ntrails(self):
 		return self._ntrails
+
+	@ntrails.setter
+	def ntrails(self,value):
+		self._ntrails = value
 
 	def __len__(self):
 		return self._ntrails
@@ -51,42 +48,38 @@ class Layout():
 	@property
 	def ncurves(self):
 		return self._ncurves
+
+	@ncurves.setter
+	def ncurves(self,value):
+		self._ncurves = value
 	
 	@property
 	def shape(self):
 		return (self.ntrails,self.ncurves)
 
 	@property
-	def depth(self):
-		return self._depth
-
-	@property
-	def label(self):
-		return self._label
-
-	@property
 	def width(self):
 		return self._width
 
 	@width.setter
-	def width(self,width:tuple[float]):
+	def width(self,value:tuple[float]):
 
-		if width is None:
+		if value is None:
 			self.width = (2,4)
 
-		elif len(width)==1:
-			self._width = width*self.ntrails
+		elif len(value)==1:
+			self._width = value*self.ntrails
 
-		elif len(width)==2:
+		elif len(value)==2:
 
-			wlist = list((width[1],)*self.ntrails)
+			wlist = list((value[1],)*self.ntrails)
 
-			wlist[self.depth.spot] = width[0]
+			wlist[self.depth.spot] = value[0]
 
 			self._width = tuple(wlist)
 
-		elif len(width)==self.ntrails:
-			self._width = width
+		elif len(value)==self.ntrails:
+			self._width = value
 
 		else:
 			raise Warning("Length of width and number of columns does not match")
@@ -100,20 +93,24 @@ class Layout():
 		return (head_height,body_height)
 
 	@height.setter
-	def height(self,height:tuple[float]):
+	def height(self,value:tuple[float]):
 
-		self._height = (1.,0.5) if height is None else height
+		self._height = (1.,0.5) if value is None else value
 
 	@property
 	def size(self):
 		
 		return (sum(self.width),sum(self.height))
 
+	@property
+	def xaxes(self):
+		return self._xaxes
+
 	def set(self,index:int,**kwargs):
 
-		self[index] = Axis(**kwargs)
+		self[index] = Xaxis(**kwargs)
 
-	def __setitem__(self,index:int,xaxis:Axis):
+	def __setitem__(self,index:int,xaxis:Xaxis):
 
 		self._xaxes[index] = xaxis
 
