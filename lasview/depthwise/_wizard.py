@@ -6,23 +6,33 @@ from .layout._xaxis import Xaxis
 
 from .layout._layout import Layout
 
-def Wizard(lasfile:lasio.LASFile,**kwargs):
+from .layout._datum import Datum
 
-	layout = Layout(**kwargs)
+class Wizard(Layout):
+
+	def __init__(self,lasfile:lasio.LASFile,**kwargs):
+
+		self._lasfile = lasfile
+
+		super().__init__(**kwargs)
+
+	@property
+	def lasfile(self):
+		return self._lasfile
+
+	@property
+	def depth(self):
+		return self._depth
 	
-def label(cycle:int=3,**kwargs):
+	@depth.setter
+	def depth(self,value:dict):
 
-	if kwargs.get("limit") is None:
-		kwargs["limit"] = (0,10*cycle)
+		power = -1 if value.get("power") is None else value.pop("power")
 
-	return Label(**kwargs)
+		if value.get("limit") is None:
+			value["limit"] = Datum(self.lasfile[0],power=power).limit
 
-def depth(array:lasio.CurveItem,lower,upper,power,**kwargs):
-
-	if kwargs.get("limit") is None:
-		kwargs["limit"] = Datum(array,lower,upper,power).limit
-
-	return Depth(**kwargs)
+		self._depth = Depth(**value)
 
 if __name__ == "__main__":
 

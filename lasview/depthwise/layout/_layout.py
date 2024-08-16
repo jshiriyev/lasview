@@ -2,7 +2,6 @@ import lasio
 
 from ._label import Label
 from ._depth import Depth
-
 from ._xaxis import Xaxis
 
 class Layout():
@@ -59,6 +58,10 @@ class Layout():
 
 	@label.setter
 	def label(self,value:dict):
+
+		if value.get("limit") is None:
+			value["limit"] = (0,10*self.cycle)
+
 		self._label = Label(**value)
 
 	@property
@@ -74,7 +77,7 @@ class Layout():
 		return self._width
 
 	@width.setter
-	def width(self,value:tuple[float]):
+	def width(self,value:tuple[int]):
 
 		if value is None:
 			self.width = (2,4)
@@ -99,14 +102,14 @@ class Layout():
 	@property
 	def height(self):
 
-		head_height = self._height[0]*self.cycle
-		body_height = self._height[1]*self.depth.length
+		head_height = int(self._height[0]*self.cycle)
+		body_height = int(self._height[1]*self.depth.length)
 
 		return (head_height,body_height)
 
 	@height.setter
-	def height(self,value:tuple[float]):
-		self._height = (1.,0.5) if value is None else value
+	def height(self,value:tuple[int]):
+		self._height = (50,20) if value is None else value
 
 	@property
 	def size(self):

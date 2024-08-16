@@ -4,10 +4,11 @@ import lasio
 
 import numpy
 
+from .layout._datum import Datum
 from .layout._xaxis import Xaxis
 
 @dataclass(frozen=True)
-class Curve:
+class Curve(Datum):
 
 	colid 	: int = None
 	rowid 	: int = None
@@ -21,15 +22,15 @@ class Curve:
 	def __call__(self,xaxis:Xaxis):
 		"""Returns the axis values and limit (left,right) for the data."""
 
-		if scale == "linear":
-			multp = self.ufloor(self.length/curve.length)
-		elif scale == "log10":
-			multp = 10**self.uceil(-numpy.log10(curve.lower))
+		if xaxis.scale == "linear":
+			multp = self.unary.floor(xaxis.length/self.length)
+		elif xaxis.scale == "log10":
+			multp = 10**self.unary.ceil(-numpy.log10(self.lower))
 
-		if scale == "linear":
-			trail = self.lower+(curve.upper-data if flip else data-curve.lower)*multp
-		elif scale == "log10":
-			trail = data*multp
+		if xaxis.scale == "linear":
+			trail = xaxis.lower+(self.upper-self.array if self.flip else self.array-self.lower)*multp
+		elif xaxis.scale == "log10":
+			trail = self.array*multp
 
 		object.__setattr__(curve,'trail',trail)
 

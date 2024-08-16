@@ -9,7 +9,7 @@ def boot(layout):
 
 	heads,bodys = [],[]
 
-	for index in range(layout.ntrails):
+	for index in range(layout.trail):
 
 		head = figure(width=layout.width[index],height=layout.height[0])
 		body = figure(width=layout.width[index],height=layout.height[1])
@@ -53,14 +53,14 @@ def boot(layout):
 		body.yaxis.minor_tick_out = 0
 
 		head.min_border_left = 0
-		if index != layout.ntrails-1:
+		if index != layout.trail-1:
 			head.min_border_right = 0
 
 		head.min_border_top = 0
 		head.min_border_bottom = 0
 
 		body.min_border_left = 0
-		if index != layout.ntrails-1:
+		if index != layout.trail-1:
 			body.min_border_right = 0
 		body.min_border_top = 0
 		# body.min_border_bottom = 0

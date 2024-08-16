@@ -14,6 +14,8 @@ class Datum:
 	lower 	: float = None
 	upper 	: float = None
 
+	flip 	: bool = False
+
 	power 	: int = None
 
 	def __post_init__(self):
@@ -45,7 +47,7 @@ class Datum:
 		"""
 		Returns the limit based on lower and upper values.
 		"""
-		return (self.lower,self.upper)
+		return (self.upper,self.lower) if self.flip else (self.lower,self.upper)
 
 	@property
 	def length(self):
@@ -57,7 +59,6 @@ class Datum:
 	@property
 	def unary(self):
 		return Unary
-	
 
 if __name__ == "__main__":
 
