@@ -1,1 +1,0 @@
-from ._curve import Curve

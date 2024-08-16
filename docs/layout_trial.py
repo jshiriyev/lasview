@@ -1,71 +1,50 @@
-import sys
+from bokeh.plotting import show
 
-sys.path.append(r'C:\\Users\\3876yl\\Documents\\pphys')
+from bokeh.layouts import gridplot
 
-# from bokeh.plotting import figure, output_file, show
+import lasio
 
-from matplotlib import gridspec
-from matplotlib import pyplot
+import numpy as np
 
-import mpld3
+from lasview import depthwise as dw
 
-import plotly.graph_objects as go
+file = lasio.read('digitized_data.las')
 
-from pphys.lasview.depthview.layout._layout import Layout
+wizard = dw.Wizard(
+	file,
+	trail = 5,
+	cycle = 4,
+	depth = dict(spot=2),
+	# depth = dict(values=file['DEPT'],spot=1),
+	width = (60,100,150,200,250),
+	height = (50,20),
+	)
 
-layout = Layout()
+# print(np.min(file[0]),np.max(file[0]))
 
-# print(layout[0].cycle)
+# print(wizard.trail)
+# print(wizard.cycle)
+# print(wizard.label.limit)
+# print(wizard.label.spot)
+# print(wizard.depth.limit)
+# print(wizard.depth.spot)
+# print(wizard.width)
+# print(wizard.height)
 
-# print(layout.depth.cycle)
+# print(wizard.depth.limit)
+# print(wizard.depth.major)
+# print(wizard.depth.minor)
+# print(wizard.depth.scale)
+# print(wizard.depth.spot)
 
+# grtot,grtot_lim = wizard[0](file['GR-TOT'],)
 
+heads,bodys = dw.bokeh.boot(wizard)
 
-fig = go.Figure()
+# print(file.keys())
 
-fig.update_layout(
-    xaxis=dict(
-        tickmode='linear',
-        tick0=0,
-        dtick=1
-    ),
-    yaxis=dict(
-        tickmode='linear',
-        tick0=0,
-        dtick=1
-    ),
-    margin=dict(l=50, r=50, t=50, b=50),
-    showlegend=True
-)
+# bodys[0].line(grtot,depth)
 
+grid = gridplot([heads,bodys],toolbar_location=None)
 
-fig.show()
-
-# fig = pyplot.figure(figsize=layout.figsize)
-
-# gspecs = gridspec.GridSpec(
-# 	nrows = 2,
-# 	ncols = layout.ntrail,
-# 	figure = fig,
-# 	width_ratios = [w/sum(layout.width) for w in layout.width],
-# 	height_ratios = (layout.height[0]*layout.ncurve,layout.height[1]*layout.depth.length),
-# 	)
-
-for index in range(layout.ntrail):
-
-	continue
-
-	head = fig.add_subplot(gspecs[0,index])
-	body = fig.add_subplot(gspecs[1,index])
-
-	head.set_ylim(layout.label.limit)
-	body.set_ylim(layout.depth.limit)
-
-	head.set_xlim(layout[index].limit)
-	body.set_xlim(layout[index].limit)
-
-# gspecs.tight_layout(fig)
-
-# mpld3.show()
-
-# pyplot.show()
+show(grid)
