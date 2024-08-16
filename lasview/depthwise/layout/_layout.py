@@ -7,7 +7,7 @@ from ._xaxis import Xaxis
 
 class Layout():
 
-	def __init__(self,trail:int=3,cycle:int=3,width:tuple[float]=None,height:tuple[float]=None):
+	def __init__(self,trail:int=3,cycle:int=3,label:dict=None,depth:dict=None,width:tuple[float]=None,height:tuple[float]=None):
 		"""It sets elements for different trails in the axes:
 
 		trail 	: number of trails including depth trail in the figure, integer
@@ -19,13 +19,13 @@ class Layout():
 		height 	: height per label row and height per unit distance,
 				len(height) must be equal to two; tuple of float
 		"""
-		self.trail = trail
-		self.cycle = cycle
+		self.trail  = trail
+		self.cycle  = cycle
 
-		# Setting the width tuple of the layout
-		self.width = width
+		self.label  = label or {}
+		self.depth  = depth or {}
 
-		# Setting the height tuple of the layout
+		self.width  = width
 		self.height = height
 
 		self._xaxes = [Xaxis() for _ in range(self.trail)]
@@ -48,6 +48,10 @@ class Layout():
 	@cycle.setter
 	def cycle(self,value):
 		self._cycle = value
+	
+	@property
+	def shape(self):
+		return (self.trail,self.cycle)
 
 	@property
 	def label(self):
@@ -64,10 +68,6 @@ class Layout():
 	@depth.setter
 	def depth(self,value:dict):
 		self._depth = Depth(**value)
-	
-	@property
-	def shape(self):
-		return (self.trail,self.cycle)
 
 	@property
 	def width(self):

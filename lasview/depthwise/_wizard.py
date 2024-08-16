@@ -2,8 +2,7 @@ import lasio
 
 from .layout._label import Label
 from .layout._depth import Depth
-
-from .layout._profile import Profile
+from .layout._xaxis import Xaxis
 
 from .layout._layout import Layout
 

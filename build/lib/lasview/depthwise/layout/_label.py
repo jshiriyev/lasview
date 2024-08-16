@@ -3,23 +3,26 @@ from dataclasses import dataclass, field
 from ._unary import Unary
 
 @dataclass(frozen=True)
-class Depth:
+class Label:
 	"""
-	It initializes the axis of Depth in a body:
+	It initializes the axis of Label in a head:
 
 	limit 	: lower and upper values of the axis
 	
 	major 	: sets the frequency of major ticks
-	minor 	: sets the frequency of minor ticks
 
-	spot 	: location of axis in the layout, int
-			index of trail in the layout
+	spot 	: location of lable in the layout, str
+			top, bottom, or None
 
 	"""
-	limit 	: tuple[float] = (0,100)
+	limit	: tuple[float] = (0,30)
 
 	major 	: int = 10
-	minor 	: range = range(1,10)
+	minor 	: range = field(
+		init = False,
+		repr = False,
+		default = None,
+		)
 
 	scale 	: str = field(
 		init = False,
@@ -27,14 +30,10 @@ class Depth:
 		default = "linear",
 		)
 
-	spot 	: int = field(
+	spot 	: str = field(
 		repr = False,
-		default = 1,
+		default = "top",
 		)
-
-	def __post_init__(self):
-
-		object.__setattr__(self,'limit',self.limit[::-1])
 
 	@property
 	def lower(self):
@@ -51,4 +50,16 @@ class Depth:
 	@property
 	def unary(self):
 		return Unary
-	
+
+if __name__ == "__main__":
+
+	label = Label()
+
+	print(label.limit)
+	print(label.major)
+	print(label.minor)
+	print(label.scale)
+	print(label.spot)
+	print(label.lower)
+	print(label.upper)
+	print(label.length)

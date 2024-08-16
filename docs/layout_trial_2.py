@@ -8,17 +8,23 @@ from lasview import depthwise as dw
 
 file = lasio.read('digitized_data.las')
 
-wizard = dw.Wizard(file,
-	ntrails = 4,
-	ncurves = 3,
+wizard = dw.layout.Layout(
+	trail = 4,
+	cycle = 3,
+	depth = dict(spot=2),
 	# depth = dict(values=file['DEPT'],spot=1),
 	width = (100,250),
-	height = (50,50),
+	height = (50,25),
 	)
 
-print(wizard.ntrails)
-print(wizard.ncurves)
-print(wizard.depth.curve)
+print(wizard.trail)
+print(wizard.cycle)
+print(wizard.label.limit)
+print(wizard.label.spot)
+print(wizard.depth.limit)
+print(wizard.depth.spot)
+print(wizard.width)
+print(wizard.height)
 
 # print(wizard.depth.spot)
 # print(wizard.depth.cycle)
