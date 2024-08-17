@@ -1,3 +1,5 @@
+import lasio
+
 class LasBatch():
 
     def __init__(self,filepaths=None,**kwargs):
