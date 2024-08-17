@@ -6,7 +6,7 @@ import lasio as ls
 
 from _depthview import DepthView
 
-lasfile = ls.read('_testing.las')
+lasfile = ls.read('sample.las')
 
 # print(ls.LASFile)
 # print(ls.SectionItems)

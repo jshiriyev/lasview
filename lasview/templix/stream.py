@@ -15,7 +15,7 @@ from bokeh.models import Label
 
 import lasio
 
-file = lasio.read('digitized_data.las')
+file = lasio.read('sample.las')
 
 trail = len(file.keys())
 
