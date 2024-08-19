@@ -1,6 +1,6 @@
 from . import layout
 
-from . import bokeh
+# from . import bokeh
 
 from ._curve import Curve
 
