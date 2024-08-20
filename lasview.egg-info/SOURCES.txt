@@ -7,8 +7,8 @@ lasview.egg-info/dependency_links.txt
 lasview.egg-info/requires.txt
 lasview.egg-info/top_level.txt
 lasview/glance/__init__.py
-lasview/glance/_glance.py
 lasview/glance/_nulls.py
+lasview/glance/_trails.py
 lasview/onepager/__init__.py
 lasview/onepager/_casing.py
 lasview/onepager/_curve.py
