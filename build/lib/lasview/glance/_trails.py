@@ -254,4 +254,4 @@ class Trails():
 		return INLINE.render_css()
 
 	def show(self):
-		view(self.html)
+		view(self.htmlname)
