@@ -1,3 +1,5 @@
+from dataclasses import dataclass, field
+
 import os
 
 from jinja2 import Template
@@ -19,6 +21,7 @@ import lasio
 
 import numpy
 
+@dataclass
 class TrackDict:
 
 	width 		: int = 200
@@ -29,8 +32,9 @@ class TrackDict:
 	head_xrange : tuple[int] = (0,1)
 	head_yrange	: tuple[int] = (0,10)
 
-	tooltips 	: list[tuple[str]] = [('@x','@y{1.1}')]
-	#[(file.keys()[index+1],'@x'),(file.keys()[0],'@y{1.1}')]
+	# tooltips 	: list[tuple[str]] = field(
+	# 	default_factory = lambda: [('@x','@y{1.1}')]
+	# 	)
 
 	htmltemp 	: str = (
 		'''
@@ -167,10 +171,11 @@ class Trails():
 	def head(self,index):
 
 		figure = bokeh_figure(
-			width=self.track.width,height=self.height[0])
+			width 	 = self.track.width,
+			height 	 = self.height[0]
+			)
 
 		figure = self.boothead(figure)
-
 		figure = self.loadhead(figure,index)
 
 		return figure
@@ -178,10 +183,12 @@ class Trails():
 	def body(self,index):
 
 		figure = bokeh_figure(
-			width=self.track.width,height=self.height[1],tooltips=self.track.tooltips)
+			width 	 = self.track.width,
+			height 	 = self.height[1],
+			tooltips = [(self.file.keys()[index],'@x'),('Depth','@y{1.1}')]
+			)
 
 		figure = self.bootbody(figure)
-			
 		figure = self.loadbody(figure,index)
 
 		return figure
@@ -208,7 +215,7 @@ class Trails():
 		figure.add_layout(LinearAxis(major_label_text_alpha=0),'right')
 		figure.add_layout(LinearAxis(),'above')
 
-		figure.y_range.flipped = True
+		figure.y_range = Range1d(self.maxdepth,self.mindepth)
 
 		figure.ygrid.minor_grid_line_color = 'lightgray'
 		figure.ygrid.minor_grid_line_alpha = 0.2
