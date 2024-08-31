@@ -38,4 +38,6 @@ lasview/stream/layout/_label.py
 lasview/stream/layout/_layout.py
 lasview/stream/layout/_unary.py
 lasview/stream/layout/_xaxis.py
+lasview/templix/__init__.py
+lasview/templix/bokeh.py
 tests/test_depthwise.py

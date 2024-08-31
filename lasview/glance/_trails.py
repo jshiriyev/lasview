@@ -22,46 +22,16 @@ import lasio
 import numpy
 
 @dataclass
-class TrackDict:
+class Frame:
+	"""Dictionary for general frame construction."""
 
 	width 		: int = 200
 
-	head_height : int = 50
-	body_height : int = 15
+	hheight 	: int = 50
+	bheight 	: int = 15
 
-	head_xrange : tuple[int] = (0,1)
-	head_yrange	: tuple[int] = (0,10)
-
-	htmltemp 	: str = (
-		'''
-		<!DOCTYPE html>
-		<html lang="en">
-			<head>
-				<meta charset="utf-8">
-				<title>LAS Curves - Bokeh Glance</title>
-				{{ java }}
-				{{ css }}
-				{{ script }}
-			<style>
-			.wrapper {
-				display: flex;
-				justify-content: center;
-				align-items: center;
-				margin: 0 auto;
-				}
-			.plotdiv {
-				margin: 0 auto;
-				}
-			</style>
-			</head>
-			<body>
-			<div class='wrapper'>
-				{{ div }}
-			</div>
-			</body>
-		</html>
-		'''
-		)
+	hxrange 	: tuple[int] = (0,1)
+	hyrange		: tuple[int] = (0,1)
 
 class Trails():
 
@@ -71,6 +41,8 @@ class Trails():
 
 		self.filename = filename
 		self.htmlname = htmlname
+
+		self.build()
 
 	@property
 	def file(self):
@@ -95,12 +67,12 @@ class Trails():
 			value = self.filename
 		
 		self._htmlname = os.path.splitext(value)[0]+'.html'
-	
+
 	def __getitem__(self,key):
 		return self.file[key]
 
 	@property
-	def number(self):
+	def curves(self):
 		return len(self.file.keys())
 
 	@property
@@ -116,26 +88,43 @@ class Trails():
 		return numpy.nanmin(self.depths)
 
 	@property
-	def length(self):
+	def depth(self):
 		return int(self.maxdepth-self.mindepth)
-	
-	def run(self,**kwargs):
 
-		self.track = kwargs
+	def build(self,**kwargs):
 
-		self.template = self.track.htmltemp
+		self.frame = kwargs
 
-		self.heads = [self.head(index) for index in range(1,self.number)]
-		self.bodys = [self.body(index) for index in range(1,self.number)]
+		self.lines = []
 
-		return self
+		self.heads = [self.head(index) for index in range(1,self.curves)]
+		self.bodys = [self.body(index) for index in range(1,self.curves)]
 
-	def cut(self,key:str,value:float,left:bool=True,**kwargs):
+	@property
+	def frame(self):
+		return self._frame
 
-		conds = self[key]<value if left else self[key]>value
+	@frame.setter
+	def frame(self,value:dict):
+		self._frame = Frame(**value)
 
-		z1 = numpy.where(conds,self[key],value)
-		z2 = numpy.full_like(z1,value)
+	@property
+	def height(self):
+		return (self.frame.hheight,self.frame.bheight*self.depth)
+
+	def style(self,key:str,**kwargs):
+
+		index = self.file.keys().index(key)-1
+
+		for name,value in kwargs.items():
+			setattr(self.lines[index].glyph,f"line_{name}",value)
+
+	def color(self,key:str,cut:float,left:bool=True,**kwargs):
+
+		conds = self[key]<cut if left else self[key]>cut
+
+		z1 = numpy.where(conds,self[key],cut)
+		z2 = numpy.full_like(z1,cut)
 
 		x1 = z1 if left else z2
 		x2 = z2 if left else z1
@@ -143,56 +132,29 @@ class Trails():
 		index = self.file.keys().index(key)-1
 
 		self.bodys[index].harea(y=self[0],x1=x1,x2=x2,**kwargs)
-
-		return self
-
-	@property
-	def track(self):
-		return self._track
-
-	@track.setter
-	def track(self,value:dict):
-		self._track = TrackDict(**value)
-
-	@property
-	def height(self):
-		return (self.track.head_height,self.track.body_height*self.length)
-
-	@property
-	def template(self):
-		return self._template
-
-	@template.setter
-	def template(self,value:str):
-		self._template = Template(value)
 	
 	def head(self,index):
 
-		width,height = self.track.width,self.height[0]
+		width,height = self.frame.width,self.height[0]
 
 		if index==1:
 			width += int(width/6)
 
-		figure = bokeh_figure(
-			width = width,
-			height = height,
-			)
+		figure = bokeh_figure(width=width,height=height)
 
-		figure = self.boothead(figure)
+		figure = self.boothead(figure,index)
 		figure = self.loadhead(figure,index)
 
 		return figure
 
 	def body(self,index):
 
-		width,height = self.track.width,self.height[1]
+		width,height = self.frame.width,self.height[1]
 
 		if index==1:
 			width += int(width/6)
 
-		figure = bokeh_figure(
-			width = width,
-			height = height,
+		figure = bokeh_figure(width=width,height=height,
 			tooltips = [(self.file.keys()[index],'@x'),('Depth','@y{1.1}')]
 			)
 
@@ -201,12 +163,12 @@ class Trails():
 
 		return figure
 
-	def boothead(self,figure:bokeh_figure):
+	def boothead(self,figure:bokeh_figure,index:int):
 
 		figure = self.deactivate(figure)
 
-		figure.x_range = Range1d(*self.track.head_xrange)
-		figure.y_range = Range1d(*self.track.head_yrange)
+		figure.x_range = Range1d(*self.frame.hxrange)
+		figure.y_range = Range1d(*self.frame.hyrange)
 
 		figure = self.trim(figure,"x")
 		figure = self.trim(figure,"y")
@@ -244,9 +206,12 @@ class Trails():
 
 		text = self.file.keys()[index]
 
-		y_offset = self.track.head_yrange[0]-self.track.head_yrange[1]
+		x = numpy.mean(self.frame.hxrange)
+		y = numpy.mean(self.frame.hyrange)
 
-		labels = Label(x=0.5,y=5,text=text,text_align="center",y_offset=y_offset)
+		y_offset = self.frame.hyrange[0]-self.frame.hyrange[1]
+
+		labels = Label(x=x,y=y,text=text,text_align="center",y_offset=y_offset)
 
 		figure.add_layout(labels)
 
@@ -254,7 +219,7 @@ class Trails():
 
 	def loadbody(self,figure:bokeh_figure,index:int):
 
-		figure.line(self.file[index],self.file[0])
+		self.lines.append(figure.line(self.file[index],self.file[0]))
 
 		return figure
 
@@ -282,18 +247,44 @@ class Trails():
 
 		script,div = components(grid)
 
-		htmldoc = self.template.render(
-			java 	= self.java,
-			css 	= self.css,
-			script 	= script,
-			div 	= div
-			)
+		return self.template.render(
+			java=self.java,css=self.css,script=script,div=div)
 
-		return htmldoc
+	@property
+	def template(self):
+		return Template(
+			'''
+			<!DOCTYPE html>
+			<html lang="en">
+				<head>
+					<meta charset="utf-8">
+					<title>LAS Curves - Bokeh Glance</title>
+					{{ java }}
+					{{ css }}
+					{{ script }}
+				<style>
+				.wrapper {
+					display: flex;
+					justify-content: center;
+					align-items: center;
+					margin: 0 auto;
+					}
+				.plotdiv {
+					margin: 0 auto;
+					}
+				</style>
+				</head>
+				<body>
+				<div class='wrapper'>
+					{{ div }}
+				</div>
+				</body>
+			</html>
+			'''
+			)
 
 	@property
 	def bold(self):
-
 		return LinearAxis(
 			major_tick_line_alpha=0,
 			minor_tick_line_alpha=0,
@@ -310,9 +301,9 @@ class Trails():
 
 	def show(self):
 
-		htmldoc = self.wrapup()
+		htmltext = self.wrapup()
 
 		with open(self.htmlname,'w') as htmlfile:
-			htmlfile.write(htmldoc)
+			htmlfile.write(htmltext)
 
 		browser.view(self.htmlname)
