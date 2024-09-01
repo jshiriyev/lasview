@@ -71,6 +71,9 @@ class Trails():
 	def __getitem__(self,key):
 		return self.file[key]
 
+	def index(self,key):
+		return self.file.keys().index(key)-1
+
 	@property
 	def curves(self):
 		return len(self.file.keys())
@@ -114,10 +117,8 @@ class Trails():
 
 	def style(self,key:str,**kwargs):
 
-		index = self.file.keys().index(key)-1
-
 		for name,value in kwargs.items():
-			setattr(self.lines[index].glyph,f"line_{name}",value)
+			setattr(self.lines[self.index(key)].glyph,f"line_{name}",value)
 
 	def color(self,key:str,cut:float,left:bool=True,**kwargs):
 
@@ -129,9 +130,29 @@ class Trails():
 		x1 = z1 if left else z2
 		x2 = z2 if left else z1
 
-		index = self.file.keys().index(key)-1
+		self.bodys[self.index(key)].harea(y=self.depths,x1=x1,x2=x2,**kwargs)
 
-		self.bodys[index].harea(y=self[0],x1=x1,x2=x2,**kwargs)
+	def tieup(self,key:str,tokey:str,multp:float=1,shift:float=0,line:dict=None,left:bool=None,**kwargs):
+
+		value = self[key]*multp+shift
+
+		style = {f"line_{name}":value for name,value in (line or {}).items()}
+
+		self.bodys[self.index(tokey)].line(value,self.depths,**style)
+
+		if left is None:
+			return
+
+		conds = value<self[tokey] if left else value>self[tokey]
+
+		z1 = numpy.where(conds,value,self[tokey])
+		z2 = numpy.full_like(z1,self[tokey])
+
+		x1 = z1 if left else z2
+		x2 = z2 if left else z1
+
+		self.bodys[self.index(tokey)].harea(
+			y=self.depths,x1=x1,x2=x2,**kwargs)
 	
 	def head(self,index):
 
@@ -219,7 +240,7 @@ class Trails():
 
 	def loadbody(self,figure:bokeh_figure,index:int):
 
-		self.lines.append(figure.line(self.file[index],self.file[0]))
+		self.lines.append(figure.line(self.file[index],self.depths))
 
 		return figure
 
