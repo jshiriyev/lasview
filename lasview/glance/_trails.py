@@ -229,9 +229,7 @@ class Trails():
 		x = numpy.mean(self.frame.hxrange)
 		y = numpy.mean(self.frame.hyrange)
 
-		y_offset = self.frame.hyrange[0]-self.frame.hyrange[1]
-
-		labels = Label(x=x,y=y,text=text,text_align="center",y_offset=y_offset)
+		labels = Label(x=x,y=y,text=text,text_align='center',text_baseline="middle")
 
 		figure.add_layout(labels)
 
