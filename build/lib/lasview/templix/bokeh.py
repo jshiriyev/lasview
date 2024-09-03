@@ -1,9 +1,3 @@
-"""
-Bokeh General visual properties:
-
-https://docs.bokeh.org/en/latest/docs/user_guide/styling/visuals.html
-"""
-
 mudcake = dict(
     fill_color = "#c02525",
     )
@@ -37,11 +31,9 @@ sandstone = dict(
     )
 
 limestone = dict(
-    fill_color = "#2BFFFF"
     )
 
 dolomite = dict(
-    fill_color = "#FF94FA"
     )
 
 water = dict(
