@@ -32,6 +32,8 @@ class Frame:
 	hheight 	: int = 50
 	bheight 	: int = 15
 
+	hsticky 	: bool = True
+
 	hxrange 	: tuple[int] = (0,1)
 	hyrange		: tuple[int] = (0,1)
 
@@ -162,9 +164,11 @@ class Trails():
 		if index==1:
 			width += int(width/6)
 
-		figure = bokeh_figure(width=width,height=height,
-			styles={'position':'sticky','top':'0px','z-index':'1000'}
-			)
+		sticky_css = {'position':'sticky','top':'0px','z-index':'1000'}
+
+		styles = sticky_css if self.frame.hsticky else {}
+
+		figure = bokeh_figure(width=width,height=height,styles=styles)
 
 		figure = self.boothead(figure,index)
 		figure = self.loadhead(figure,index)
