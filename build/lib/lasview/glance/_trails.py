@@ -2,7 +2,14 @@ from dataclasses import dataclass, field
 
 import os
 
+from jinja2 import Template
+
 from bokeh.embed import components
+from bokeh.resources import INLINE
+
+from bokeh.util import browser
+
+from bokeh.plotting import figure as bokeh_figure
 
 from bokeh.layouts import gridplot
 
@@ -11,14 +18,6 @@ from bokeh.models import Div
 from bokeh.models import Range1d
 from bokeh.models import LinearAxis
 from bokeh.models import Label
-
-from bokeh.plotting import figure as bokeh_figure
-
-from bokeh.resources import INLINE
-
-from bokeh.util import browser
-
-from jinja2 import Template
 
 import lasio
 
@@ -30,15 +29,13 @@ class Frame:
 
 	width 		: int = 200
 
-	hsticky 	: bool = True
-
 	hheight 	: int = 50
 	bheight 	: int = 15
 
+	hsticky 	: bool = True
+
 	hxrange 	: tuple[int] = (0,1)
 	hyrange		: tuple[int] = (0,1)
-
-	byspace 	: float = 20.
 
 class Trails():
 
@@ -225,7 +222,7 @@ class Trails():
 
 		figure.y_range = Range1d(self.maxdepth,self.mindepth)
 
-		figure.yaxis.ticker.max_interval = self.frame.byspace
+		figure.yaxis.ticker.max_interval = 20
 
 		figure.ygrid.minor_grid_line_color = 'lightgray'
 		figure.ygrid.minor_grid_line_alpha = 0.2
