@@ -8,9 +8,12 @@ from bokeh.layouts import gridplot
 
 from bokeh.models import Div
 
-from bokeh.models import Range1d
+from bokeh.models import CrosshairTool
+from bokeh.models import HoverTool
 from bokeh.models import LinearAxis
 from bokeh.models import Label
+from bokeh.models import Range1d
+from bokeh.models import Span
 
 from bokeh.plotting import figure as bokeh_figure
 
@@ -24,13 +27,16 @@ import lasio
 
 import numpy
 
-@dataclass
+@dataclass(frozen=True)
 class Frame:
 	"""Dictionary for general frame construction."""
 
 	width 		: int = 200
 
 	hsticky 	: bool = True
+
+	bxtips 		: bool = True
+	bxspan 		: bool = True
 
 	hheight 	: int = 50
 	bheight 	: int = 15
@@ -39,6 +45,11 @@ class Frame:
 	hyrange		: tuple[int] = (0,1)
 
 	byspace 	: float = 20.
+
+	def __post_init__(self):
+
+		object.__setattr__(
+			self,"hrange",(self.hxrange,self.hyrange))
 
 class Trails():
 
@@ -106,6 +117,8 @@ class Trails():
 		self.frame = kwargs
 
 		self.lines = []
+
+		self._xspan = Span(dimension="width",line_width=0.5)
 
 		self.heads = [self.head(index) for index in range(1,self.curves)]
 		self.bodys = [self.body(index) for index in range(1,self.curves)]
@@ -185,13 +198,23 @@ class Trails():
 		if index==1:
 			width += int(width/6)
 
-		figure = bokeh_figure(width=width,height=height,
-			tooltips = [(self.file.keys()[index],'@x'),('Depth','@y{1.1}')]
-			)
+		figure = bokeh_figure(width=width,height=height)
 
 		figure = self.bootbody(figure,index)
 		figure = self.loadbody(figure,index)
 
+		power = -int(numpy.floor(numpy.log10(numpy.nanmin(numpy.abs(self.file[index])))))
+
+		tooltips = [("","@y{0.00}"),("","@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}")]
+
+		if self.frame.bxtips:
+			figure.add_tools(HoverTool(
+				tooltips=tooltips,mode='hline',attachment="above"))
+
+		if self.frame.bxspan:
+			figure.add_tools(CrosshairTool(
+				overlay=self._xspan))
+			
 		return figure
 
 	def boothead(self,figure:bokeh_figure,index:int):
