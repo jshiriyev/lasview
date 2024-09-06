@@ -9,6 +9,7 @@ from bokeh.layouts import gridplot
 from bokeh.models import Div
 
 from bokeh.models import CrosshairTool
+from bokeh.models import CustomJS
 from bokeh.models import HoverTool
 from bokeh.models import LinearAxis
 from bokeh.models import Label
@@ -120,6 +121,18 @@ class Trails():
 
 		self._xspan = Span(dimension="width",line_width=0.5)
 
+		self._depth_label = Label(x=numpy.quantile(self.file[-1],0.65),y=0,y_offset=-2.,
+			text="",text_baseline="top",text_align="left",text_font_size='12px')
+
+		self._depth_callback = CustomJS(
+			args=dict(label=self._depth_label),
+			code="""
+				    const y = cb_obj.y;
+				    label.y = y;
+				    label.text = `${y.toFixed(1)}`;
+				"""
+		)
+
 		self.heads = [self.head(index) for index in range(1,self.curves)]
 		self.bodys = [self.body(index) for index in range(1,self.curves)]
 
@@ -205,7 +218,7 @@ class Trails():
 
 		power = -int(numpy.floor(numpy.log10(numpy.nanmin(numpy.abs(self.file[index])))))
 
-		tooltips = [("","@y{0.00}"),("","@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}")]
+		tooltips = [("","@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}")]
 
 		if self.frame.bxtips:
 			figure.add_tools(HoverTool(
@@ -214,6 +227,11 @@ class Trails():
 		if self.frame.bxspan:
 			figure.add_tools(CrosshairTool(
 				overlay=self._xspan))
+
+		if index==self.curves-1:
+			figure.add_layout(self._depth_label)
+
+		figure.js_on_event('mousemove',self._depth_callback)
 			
 		return figure
 
