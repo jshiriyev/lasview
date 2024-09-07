@@ -34,23 +34,23 @@ class Frame:
 
 	width 		: int = 200
 
-	hsticky 	: bool = True
+	head_sticky : bool = True
 
-	bxtips 		: bool = True
-	bxspan 		: bool = True
+	curve_tips  : bool = True
+	depth_span 	: bool = True
 
-	hheight 	: int = 60
-	bheight 	: int = 15
+	head_height : int = 60
+	body_height : int = 15
 
-	hxrange 	: tuple[int] = (0,1)
-	hyrange		: tuple[int] = (0,1)
+	head_xrange : tuple[int] = (0,1)
+	head_yrange	: tuple[int] = (0,1)
 
-	byspace 	: float = 20.
+	depth_space : float = 20.
 
 	def __post_init__(self):
 
 		object.__setattr__(
-			self,"hrange",(self.hxrange,self.hyrange))
+			self,"hrange",(self.head_xrange,self.head_yrange))
 
 class Trails():
 
@@ -60,6 +60,8 @@ class Trails():
 
 		self.filename = filename
 		self.htmlname = htmlname
+
+		self._depth_crosshair()
 
 		self.build()
 
@@ -113,29 +115,30 @@ class Trails():
 	def depth(self):
 		return int(self.maxdepth-self.mindepth)
 
-	def build(self,**kwargs):
+	def _depth_crosshair(self):
 
-		self.frame = kwargs
+		self._depth_span = Span(dimension="width",line_width=0.5)
 
-		self.lines = []
+		x = numpy.quantile(
+			(numpy.nanmin(self.file[-1]),numpy.nanmax(self.file[-1])),0.65)
 
-		self._xspan = Span(dimension="width",line_width=0.5)
+		x = 0.65 if numpy.isnan(x) else x
 
-		self._depth_label = Label(x=numpy.quantile(self.file[-1],0.65),y=0,y_offset=-2.,
+		self._depth_label = Label(x=x,y=0,y_offset=-2.,
 			background_fill_color="white",background_fill_alpha=0.7,
 			text="",text_baseline="top",text_align="left",text_font_size='12px')
 
 		self._depth_move_callback = CustomJS(
 			args=dict(label=self._depth_label),
 			code="""
-					const x = cb_obj.x;
-				    const y = cb_obj.y;
-				    if (x !== null && y !== null) {
-				        label.visible = true;
-				    }
-				    label.y = y;
-				    label.text = `${y.toFixed(1)}`;
-				"""
+				const x = cb_obj.x;
+				const y = cb_obj.y;
+				if (x !== null && y !== null) {
+					label.visible = true;
+				}
+				label.y = y;
+				label.text = `${y.toFixed(1)}`;
+			"""
 		)
 
 		self._depth_leave_callback = CustomJS(
@@ -144,8 +147,14 @@ class Trails():
 			    label.visible = false;
 			""")
 
-		self.heads = [self.head(index) for index in range(1,self.curves)]
-		self.bodys = [self.body(index) for index in range(1,self.curves)]
+	def build(self,**kwargs):
+
+		self.frame = kwargs
+
+		self.lines = []
+
+		self.heads = [self.prephead(index) for index in range(1,self.curves)]
+		self.bodys = [self.prepbody(index) for index in range(1,self.curves)]
 
 	@property
 	def frame(self):
@@ -157,7 +166,7 @@ class Trails():
 
 	@property
 	def height(self):
-		return (self.frame.hheight,self.frame.bheight*self.depth)
+		return (self.frame.head_height,self.frame.body_height*self.depth)
 
 	def style(self,key:str,**kwargs):
 
@@ -197,7 +206,7 @@ class Trails():
 
 		self.bodys[self.index(tokey)].harea(y=self.depths,x1=x1,x2=x2,**kwargs)
 	
-	def head(self,index):
+	def prephead(self,index):
 
 		width,height = self.frame.width,self.height[0]
 
@@ -206,7 +215,7 @@ class Trails():
 
 		sticky_css = {'position':'sticky','top':'0px','z-index':'1000'}
 
-		styles = sticky_css if self.frame.hsticky else {}
+		styles = sticky_css if self.frame.head_sticky else {}
 
 		figure = bokeh_figure(width=width,height=height,styles=styles)
 
@@ -215,7 +224,7 @@ class Trails():
 
 		return figure
 
-	def body(self,index):
+	def prepbody(self,index):
 
 		width,height = self.frame.width,self.height[1]
 
@@ -227,26 +236,32 @@ class Trails():
 		figure = self.bootbody(figure,index)
 		figure = self.loadbody(figure,index)
 
-		power = -int(numpy.floor(numpy.log10(numpy.nanmin(numpy.abs(self.file[index])))))
+		if self.frame.curve_tips:
 
-		tooltips = [("","@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}")]
+			xvalue = numpy.nanmin(numpy.abs(self.file[index]))
 
-		if self.frame.bxtips:
+			power = -int(numpy.floor(numpy.log10(xvalue))) if xvalue!=0 else 1
+
+			tooltips = [("","@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}")]
+
 			hover = HoverTool(
 				tooltips=tooltips,mode='hline',attachment="above")
+
 			hover.renderers = [self.lines[index-1]]
+
 			figure.add_tools(hover)
 
-		if self.frame.bxspan:
-			hair = CrosshairTool(
-				overlay=self._xspan)
-			figure.add_tools(hair)
+		if self.frame.depth_span:
 
-		if index==self.curves-1:
-			figure.add_layout(self._depth_label)
+			crosshair = CrosshairTool(overlay=self._depth_span)
 
-		figure.js_on_event('mousemove',self._depth_move_callback)
-		figure.js_on_event('mouseleave',self._depth_leave_callback)
+			figure.add_tools(crosshair)
+
+			if index==self.curves-1:
+				figure.add_layout(self._depth_label)
+
+			figure.js_on_event('mousemove',self._depth_move_callback)
+			figure.js_on_event('mouseleave',self._depth_leave_callback)
 			
 		return figure
 
@@ -254,8 +269,8 @@ class Trails():
 
 		figure = self.deactivate(figure)
 
-		figure.x_range = Range1d(*self.frame.hxrange)
-		figure.y_range = Range1d(*self.frame.hyrange)
+		figure.x_range = Range1d(*self.frame.head_xrange)
+		figure.y_range = Range1d(*self.frame.head_yrange)
 
 		figure = self.trim(figure,"x")
 		figure = self.trim(figure,"y")
@@ -281,7 +296,7 @@ class Trails():
 
 		figure.y_range = Range1d(self.maxdepth,self.mindepth)
 
-		figure.yaxis.ticker.max_interval = self.frame.byspace
+		figure.yaxis.ticker.max_interval = self.frame.depth_space
 
 		figure.ygrid.minor_grid_line_color = 'lightgray'
 		figure.ygrid.minor_grid_line_alpha = 0.2
@@ -296,15 +311,15 @@ class Trails():
 		mnem = self.file.curves[index].mnemonic
 		unit = self.file.curves[index].unit
 
-		x = numpy.mean(self.frame.hxrange)
+		x = numpy.mean(self.frame.head_xrange)
 
-		y1 = numpy.quantile(self.frame.hyrange,0.70)
-		y2 = numpy.quantile(self.frame.hyrange,0.30)
+		ymnem = numpy.quantile(self.frame.head_yrange,0.65)
+		yunit = numpy.quantile(self.frame.head_yrange,0.30)
 
-		mnem_label = Label(x=x,y=y1,text=mnem,text_font_size='15px',
+		mnem_label = Label(x=x,y=ymnem,text=mnem,text_font_size='15px',
 			text_align='center',text_baseline="middle")
 
-		unit_label = Label(x=x,y=y2,text=unit,text_font_size='12px',
+		unit_label = Label(x=x,y=yunit,text=unit,text_font_size='12px',
 			text_align='center',text_baseline="middle")
 
 		figure.add_layout(mnem_label)
