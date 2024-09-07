@@ -242,7 +242,9 @@ class Trails():
 
 			power = -int(numpy.floor(numpy.log10(xvalue))) if xvalue!=0 else 1
 
-			tooltips = [("","@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}")]
+			xtips = "@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}"
+
+			tooltips = [("",xtips)] if self.frame.depth_span else [("","@y{0.00}: "+xtips)]
 
 			hover = HoverTool(
 				tooltips=tooltips,mode='hline',attachment="above")
