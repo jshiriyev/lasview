@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
 	name = 'lasview',
-	version = '0.0.28',
+	version = '0.0.39',
 	packages = find_packages(),
 	install_requires = [
 		'numpy>=1.26.4',

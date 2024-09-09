@@ -8,7 +8,7 @@ from bokeh.layouts import gridplot
 
 from bokeh.models import Div
 
-from bokeh.models import CrosshairTool
+# from bokeh.models import CrosshairTool
 from bokeh.models import CustomJS
 from bokeh.models import HoverTool
 from bokeh.models import LinearAxis
@@ -61,7 +61,7 @@ class Trails():
 		self.filename = filename
 		self.htmlname = htmlname
 
-		self._depth_crosshair()
+		self.pre_build()
 
 		self.build()
 
@@ -97,7 +97,7 @@ class Trails():
 
 	@property
 	def curves(self):
-		return len(self.file.keys())
+		return len(self.file.keys())-1
 
 	@property
 	def depths(self):
@@ -115,37 +115,59 @@ class Trails():
 	def depth(self):
 		return int(self.maxdepth-self.mindepth)
 
-	def _depth_crosshair(self):
+	def pre_build(self):
 
-		self._depth_span = Span(dimension="width",line_width=0.5)
+		self.spanliner = dict(dimension="width",line_width=0.5)
 
-		x = numpy.quantile(
-			(numpy.nanmin(self.file[-1]),numpy.nanmax(self.file[-1])),0.65)
+		self.spanlabels = []
 
-		x = 0.65 if numpy.isnan(x) else x
+		for index in range(1,self.curves+1):
 
-		self._depth_label = Label(x=x,y=0,y_offset=-2.,
-			background_fill_color="white",background_fill_alpha=0.7,
-			text="",text_baseline="top",text_align="left",text_font_size='12px')
+			x = numpy.quantile((
+					numpy.nanmin(self.file[index]),
+					numpy.nanmax(self.file[index])),0.7)
 
-		self._depth_move_callback = CustomJS(
-			args=dict(label=self._depth_label),
-			code="""
-				const x = cb_obj.x;
-				const y = cb_obj.y;
-				if (x !== null && y !== null) {
-					label.visible = true;
-				}
-				label.y = y;
-				label.text = `${y.toFixed(1)}`;
+			print(x)
+
+			self.spanlabels.append(Label(
+				x = 0.7 if numpy.isnan(x) else x,
+				y = 0,
+				y_offset = -2.,
+				background_fill_color = "white",
+				background_fill_alpha = 0.7,
+				text = "",
+				text_baseline = "top",
+				text_align = "left",
+				text_font_size = '12px'
+				))
+
+		self._spanliner_move_code = """
+			var geometry = cb_data['geometry'];
+			var depth = geometry['y'];
+			liner.location = depth;
 			"""
-		)
 
-		self._depth_leave_callback = CustomJS(
-			args=dict(label=self._depth_label),
-			code="""
-			    label.visible = false;
-			""")
+		self._spanlabel_move_code = """
+			const x = cb_obj.x;
+			const y = cb_obj.y;
+			if (x !== null && y !== null) {
+				label.visible = true;
+			}
+			label.y = y;
+			label.text = `${y.toFixed(1)}`;
+			"""
+
+		self._spanlabel_leave_code = """
+			label.visible = false;
+			"""
+
+	@property
+	def spanliner(self):
+		return self._spanliner
+
+	@spanliner.setter
+	def spanliner(self,value:dict):
+		self._spanliner = Span(**value)
 
 	def build(self,**kwargs):
 
@@ -153,8 +175,23 @@ class Trails():
 
 		self.lines = []
 
-		self.heads = [self.prephead(index) for index in range(1,self.curves)]
-		self.bodys = [self.prepbody(index) for index in range(1,self.curves)]
+		self._spanliner_move_callback = CustomJS(
+			args=dict(liner=self.spanliner),code=self._spanliner_move_code)
+
+		self._spanlabel_move_callbacks = []
+
+		for index in range(self.curves):
+			self._spanlabel_move_callbacks.append(CustomJS(
+				args=dict(label=self.spanlabels[index]),code=self._spanlabel_move_code))
+
+		self._spanlabel_leave_callbacks = []
+
+		for index in range(self.curves):
+			self._spanlabel_leave_callbacks.append(CustomJS(
+				args=dict(label=self.spanlabels[index]),code=self._spanlabel_leave_code))
+
+		self.heads = [self.prephead(index) for index in range(1,self.curves+1)]
+		self.bodys = [self.prepbody(index) for index in range(1,self.curves+1)]
 
 	@property
 	def frame(self):
@@ -236,6 +273,15 @@ class Trails():
 		figure = self.bootbody(figure,index)
 		figure = self.loadbody(figure,index)
 
+		if self.frame.depth_span:
+
+			figure.add_layout(self.spanliner)
+
+			figure.add_layout(self.spanlabels[index-1])
+
+			figure.js_on_event('mousemove',self._spanlabel_move_callbacks[index-1])
+			figure.js_on_event('mouseleave',self._spanlabel_leave_callbacks[index-1])
+
 		if self.frame.curve_tips:
 
 			xvalue = numpy.nanmin(numpy.abs(self.file[index]))
@@ -246,24 +292,14 @@ class Trails():
 
 			tooltips = [("",xtips)] if self.frame.depth_span else [("","@y{0.00}: "+xtips)]
 
-			hover = HoverTool(
-				tooltips=tooltips,mode='hline',attachment="above")
+			hover = HoverTool(tooltips=tooltips,mode='hline',attachment="above")
 
 			hover.renderers = [self.lines[index-1]]
 
+			if self.frame.depth_span:
+				hover.callback = self._spanliner_move_callback
+
 			figure.add_tools(hover)
-
-		if self.frame.depth_span:
-
-			crosshair = CrosshairTool(overlay=self._depth_span)
-
-			figure.add_tools(crosshair)
-
-			if index==self.curves-1:
-				figure.add_layout(self._depth_label)
-
-			figure.js_on_event('mousemove',self._depth_move_callback)
-			figure.js_on_event('mouseleave',self._depth_leave_callback)
 			
 		return figure
 
