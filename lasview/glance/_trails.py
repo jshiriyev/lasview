@@ -36,7 +36,6 @@ class Frame:
 
 	head_sticky : bool = True
 
-	curve_tips  : bool = True
 	depth_span 	: bool = True
 
 	head_height : int = 60
@@ -119,35 +118,13 @@ class Trails():
 
 		self.spanliner = dict(dimension="width",line_width=0.5)
 
-		self.spanlabels = []
-
-		for index in range(1,self.curves+1):
-
-			x = numpy.quantile((
-					numpy.nanmin(self.file[index]),
-					numpy.nanmax(self.file[index])),0.7)
-
-			print(x)
-
-			self.spanlabels.append(Label(
-				x = 0.7 if numpy.isnan(x) else x,
-				y = 0,
-				y_offset = -2.,
-				background_fill_color = "white",
-				background_fill_alpha = 0.7,
-				text = "",
-				text_baseline = "top",
-				text_align = "left",
-				text_font_size = '12px'
-				))
-
-		self._spanliner_move_code = """
+		self.spanliner_move_code = """
 			var geometry = cb_data['geometry'];
 			var depth = geometry['y'];
 			liner.location = depth;
 			"""
 
-		self._spanlabel_move_code = """
+		self.spanlabel_move_code = """
 			const x = cb_obj.x;
 			const y = cb_obj.y;
 			if (x !== null && y !== null) {
@@ -157,7 +134,7 @@ class Trails():
 			label.text = `${y.toFixed(1)}`;
 			"""
 
-		self._spanlabel_leave_code = """
+		self.spanlabel_leave_code = """
 			label.visible = false;
 			"""
 
@@ -174,21 +151,6 @@ class Trails():
 		self.frame = kwargs
 
 		self.lines = []
-
-		self._spanliner_move_callback = CustomJS(
-			args=dict(liner=self.spanliner),code=self._spanliner_move_code)
-
-		self._spanlabel_move_callbacks = []
-
-		for index in range(self.curves):
-			self._spanlabel_move_callbacks.append(CustomJS(
-				args=dict(label=self.spanlabels[index]),code=self._spanlabel_move_code))
-
-		self._spanlabel_leave_callbacks = []
-
-		for index in range(self.curves):
-			self._spanlabel_leave_callbacks.append(CustomJS(
-				args=dict(label=self.spanlabels[index]),code=self._spanlabel_leave_code))
 
 		self.heads = [self.prephead(index) for index in range(1,self.curves+1)]
 		self.bodys = [self.prepbody(index) for index in range(1,self.curves+1)]
@@ -222,7 +184,7 @@ class Trails():
 
 		self.bodys[self.index(key)].harea(y=self.depths,x1=x1,x2=x2,**kwargs)
 
-	def tieup(self,key:str,tokey:str,multp:float=1,shift:float=0,line:dict=None,left:bool=None,**kwargs):
+	def overlay(self,key:str,tokey:str,multp:float=1,shift:float=0,line:dict=None,left:bool=None,**kwargs):
 
 		value = self[key]*multp+shift
 
@@ -274,32 +236,9 @@ class Trails():
 		figure = self.loadbody(figure,index)
 
 		if self.frame.depth_span:
+			figure = self.spanbody(figure,index)
 
-			figure.add_layout(self.spanliner)
-
-			figure.add_layout(self.spanlabels[index-1])
-
-			figure.js_on_event('mousemove',self._spanlabel_move_callbacks[index-1])
-			figure.js_on_event('mouseleave',self._spanlabel_leave_callbacks[index-1])
-
-		if self.frame.curve_tips:
-
-			xvalue = numpy.nanmin(numpy.abs(self.file[index]))
-
-			power = -int(numpy.floor(numpy.log10(xvalue))) if xvalue!=0 else 1
-
-			xtips = "@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}"
-
-			tooltips = [("",xtips)] if self.frame.depth_span else [("","@y{0.00}: "+xtips)]
-
-			hover = HoverTool(tooltips=tooltips,mode='hline',attachment="above")
-
-			hover.renderers = [self.lines[index-1]]
-
-			if self.frame.depth_span:
-				hover.callback = self._spanliner_move_callback
-
-			figure.add_tools(hover)
+		figure = self.hintbody(figure,index)
 			
 		return figure
 
@@ -368,6 +307,70 @@ class Trails():
 	def loadbody(self,figure:bokeh_figure,index:int):
 
 		self.lines.append(figure.line(self.file[index],self.depths))
+
+		return figure
+
+	def spanbody(self,figure:bokeh_figure,index:int):
+
+		figure.add_layout(self.spanliner)
+
+		# Adding the depth value of spanliner as a label
+		x = numpy.quantile((
+			numpy.nanmin(self.file[index]),
+			numpy.nanmax(self.file[index])),0.7)
+
+		spanlabel = Label(
+			x = x,
+			y = 0,
+			y_offset = -2.,
+			background_fill_color = "white",
+			background_fill_alpha = 0.7,
+			text = "",
+			text_baseline = "top",
+			text_align = "left",
+			text_font_size = '12px'
+			)
+
+		figure.add_layout(spanlabel)
+
+		# Adding move callback to change the location of span depth label.
+		figure.js_on_event('mousemove',CustomJS(
+			args = dict(label=spanlabel),
+			code = self.spanlabel_move_code),
+		)
+
+		# Adding leave callback to hide the span when mouse is out of the figure.
+		figure.js_on_event('mouseleave',CustomJS(
+			args = dict(label=spanlabel),
+			code = self.spanlabel_leave_code),
+		)
+
+		return figure
+
+	def hintbody(self,figure:bokeh_figure,index:int):
+
+		xvalue = numpy.nanmin(numpy.abs(self.file[index]))
+
+		power = -int(numpy.floor(numpy.log10(xvalue))) if xvalue!=0 else 1
+
+		xtips = "@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}"
+
+		dunit = self.file.curves[0].unit
+
+		tooltips = [("",xtips)] if self.frame.depth_span else [("","@y{0.00}" +f"{dunit} : "+xtips)]
+
+		hover = HoverTool(tooltips=tooltips,mode='hline',attachment="above")
+
+		hover.renderers = [self.lines[index-1]]
+
+		if self.frame.depth_span:
+
+			hover.callback = CustomJS(
+				args = dict(liner=self.spanliner),
+				code = self.spanliner_move_code,
+				)
+
+		figure.add_tools(hover)
 
 		return figure
 
