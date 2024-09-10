@@ -41,8 +41,8 @@ class Frame:
 	head_height : int = 60
 	body_height : int = 15
 
-	head_xrange : tuple[int] = (0,1)
-	head_yrange	: tuple[int] = (0,1)
+	head_xrange : tuple[int] = (0,1) # it is a trail property
+	head_yrange	: tuple[int] = (0,1) # it is a trail property
 
 	depth_space : float = 20.
 
@@ -60,7 +60,7 @@ class Trails():
 		self.filename = filename
 		self.htmlname = htmlname
 
-		self.pre_build()
+		self.spanline = dict(dimension="width",line_width=0.5)
 
 		self.build()
 
@@ -88,6 +88,14 @@ class Trails():
 		
 		self._htmlname = os.path.splitext(value)[0]+'.html'
 
+	@property
+	def spanline(self):
+		return self._spanline
+
+	@spanline.setter
+	def spanline(self,value:dict):
+		self._spanline = Span(**value)
+
 	def __getitem__(self,key):
 		return self.file[key]
 
@@ -114,43 +122,16 @@ class Trails():
 	def depth(self):
 		return int(self.maxdepth-self.mindepth)
 
-	def pre_build(self):
-
-		self.spanliner = dict(dimension="width",line_width=0.5)
-
-		self.spanliner_move_code = """
-			var geometry = cb_data['geometry'];
-			var depth = geometry['y'];
-			liner.location = depth;
-			"""
-
-		self.spanlabel_move_code = """
-			const x = cb_obj.x;
-			const y = cb_obj.y;
-			if (x !== null && y !== null) {
-				label.visible = true;
-			}
-			label.y = y;
-			label.text = `${y.toFixed(1)}`;
-			"""
-
-		self.spanlabel_leave_code = """
-			label.visible = false;
-			"""
-
-	@property
-	def spanliner(self):
-		return self._spanliner
-
-	@spanliner.setter
-	def spanliner(self,value:dict):
-		self._spanliner = Span(**value)
-
-	def build(self,**kwargs):
+	def build(self,wdict:dict=None,**kwargs):
 
 		self.frame = kwargs
 
-		self.lines = []
+		self.width = [self.frame.width]*self.curves
+
+		for key,size in (wdict or {}).items():
+			self.width[self.index(key)] = size
+
+		self.lines,self.spanlabels = [],[]
 
 		self.heads = [self.prephead(index) for index in range(1,self.curves+1)]
 		self.bodys = [self.prepbody(index) for index in range(1,self.curves+1)]
@@ -162,52 +143,14 @@ class Trails():
 	@frame.setter
 	def frame(self,value:dict):
 		self._frame = Frame(**value)
-
+	
 	@property
 	def height(self):
 		return (self.frame.head_height,self.frame.body_height*self.depth)
-
-	def style(self,key:str,**kwargs):
-
-		for name,value in kwargs.items():
-			setattr(self.lines[self.index(key)].glyph,f"line_{name}",value)
-
-	def color(self,key:str,cut:float,left:bool=True,**kwargs):
-
-		conds = self[key]<cut if left else self[key]>cut
-
-		z1 = numpy.where(conds,self[key],cut)
-		z2 = numpy.full_like(z1,cut)
-
-		x1 = z1 if left else z2
-		x2 = z2 if left else z1
-
-		self.bodys[self.index(key)].harea(y=self.depths,x1=x1,x2=x2,**kwargs)
-
-	def overlay(self,key:str,tokey:str,multp:float=1,shift:float=0,line:dict=None,left:bool=None,**kwargs):
-
-		value = self[key]*multp+shift
-
-		style = {f"line_{name}":value for name,value in (line or {}).items()}
-
-		self.bodys[self.index(tokey)].line(value,self.depths,**style)
-
-		if left is None:
-			return
-
-		conds = value<self[tokey] if left else value>self[tokey]
-
-		z1 = numpy.where(conds,value,self[tokey])
-		z2 = numpy.full_like(z1,self[tokey])
-
-		x1 = z1 if left else z2
-		x2 = z2 if left else z1
-
-		self.bodys[self.index(tokey)].harea(y=self.depths,x1=x1,x2=x2,**kwargs)
 	
 	def prephead(self,index):
 
-		width,height = self.frame.width,self.height[0]
+		width,height = self.width[index-1],self.height[0]
 
 		if index==1:
 			width += int(width/6)
@@ -225,7 +168,7 @@ class Trails():
 
 	def prepbody(self,index):
 
-		width,height = self.frame.width,self.height[1]
+		width,height = self.width[index-1],self.height[1]
 
 		if index==1:
 			width += int(width/6)
@@ -312,9 +255,9 @@ class Trails():
 
 	def spanbody(self,figure:bokeh_figure,index:int):
 
-		figure.add_layout(self.spanliner)
+		figure.add_layout(self.spanline)
 
-		# Adding the depth value of spanliner as a label
+		# Adding the depth value of spanline as a label
 		x = numpy.quantile((
 			numpy.nanmin(self.file[index]),
 			numpy.nanmax(self.file[index])),0.7)
@@ -331,18 +274,28 @@ class Trails():
 			text_font_size = '12px'
 			)
 
+		self.spanlabels.append(spanlabel)
+
 		figure.add_layout(spanlabel)
 
 		# Adding move callback to change the location of span depth label.
 		figure.js_on_event('mousemove',CustomJS(
 			args = dict(label=spanlabel),
-			code = self.spanlabel_move_code),
+			code = """
+				const x = cb_obj.x;
+				const y = cb_obj.y;
+				if (x !== null && y !== null) {
+					label.visible = true;
+				}
+				label.y = y;
+				label.text = `${y.toFixed(1)}`;
+				"""),
 		)
 
 		# Adding leave callback to hide the span when mouse is out of the figure.
 		figure.js_on_event('mouseleave',CustomJS(
 			args = dict(label=spanlabel),
-			code = self.spanlabel_leave_code),
+			code = """label.visible = false;"""),
 		)
 
 		return figure
@@ -357,7 +310,7 @@ class Trails():
 
 		dunit = self.file.curves[0].unit
 
-		tooltips = [("",xtips)] if self.frame.depth_span else [("","@y{0.00}" +f" {dunit} - "+xtips)]
+		tooltips = [("",xtips)] if self.frame.depth_span else [("","@y{0.00}" +f"{dunit} : "+xtips)]
 
 		hover = HoverTool(tooltips=tooltips,mode='hline',attachment="above")
 
@@ -366,12 +319,69 @@ class Trails():
 		if self.frame.depth_span:
 
 			hover.callback = CustomJS(
-				args = dict(liner=self.spanliner),
-				code = self.spanliner_move_code)
+				args = dict(line=self.spanline),
+				code = """
+					var geometry = cb_data['geometry'];
+					var depth = geometry['y'];
+					line.location = depth;
+					""",
+				)
 
 		figure.add_tools(hover)
 
 		return figure
+
+	def mapline(self,key:str,**kwargs):
+
+		for name,value in kwargs.items():
+			setattr(self.lines[self.index(key)].glyph,f"line_{name}",value)
+
+	def color(self,key:str,cut:float,left:bool=True,**kwargs):
+
+		conds = self.file[key]<cut if left else self.file[key]>cut
+
+		z1 = numpy.where(conds,self.file[key],cut)
+		z2 = numpy.full_like(z1,cut)
+
+		x1 = z1 if left else z2
+		x2 = z2 if left else z1
+
+		self.bodys[self.index(key)].harea(y=self.depths,x1=x1,x2=x2,**kwargs)
+
+	def limit(self,key:str,xlim:tuple=None,*,xmin:float=numpy.nan,xmax:float=numpy.nan):
+
+		xlim = (xmin,xmax) if xlim is None else xlim
+
+		index = self.index(key)
+
+		self.bodys[index].x_range.start = xlim[0]
+		self.bodys[index].x_range.end = xlim[1]
+
+		xmin = numpy.nanmin(self.file[index]) if numpy.isnan(xlim[0]) else xlim[0]
+		xmax = numpy.nanmax(self.file[index]) if numpy.isnan(xlim[1]) else xlim[1]
+
+		self.spanlabels[index].x = numpy.quantile((xmin,xmax),0.7)
+
+	def overlay(self,key:str,tokey:str,multp:float=1,shift:float=0,line:dict=None,left:bool=None,**kwargs):
+
+		value = self.file[key]*multp+shift
+
+		style = {f"line_{name}":value for name,value in (line or {}).items()}
+
+		self.bodys[self.index(tokey)].line(value,self.depths,**style)
+
+		if left is None:
+			return
+
+		conds = value<self.file[tokey] if left else value>self.file[tokey]
+
+		z1 = numpy.where(conds,value,self.file[tokey])
+		z2 = numpy.full_like(z1,self.file[tokey])
+
+		x1 = z1 if left else z2
+		x2 = z2 if left else z1
+
+		self.bodys[self.index(tokey)].harea(y=self.depths,x1=x1,x2=x2,**kwargs)
 
 	@staticmethod
 	def deactivate(figure:bokeh_figure):
