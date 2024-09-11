@@ -109,18 +109,7 @@ class Trails():
 
 		mask = self.maskdepth(ymin,ymax)
 
-		# curve = self.file.curves[0]
-		# print("FILE",type(self.file),self.file)
-		# print("MASK",type(mask),mask)
-		# print("CURVE",type(curve),curve)
-		# print("FILE[CURVE.MNEMONIC]",type(self.file[curve.mnemonic]),self.file[curve.mnemonic])
-
-		# print(self.file.curves)
-		# print(mask)
-
-		# self.file.curves = [curve for curve in self.file.curves]
-
-		self.file.curves = [self.file.curvesdict[curve.mnemonic][mask] for curve in self.file.curves]
+		self._file.curves = [self._file[curve.mnemonic][mask] for curve in self._file.curves]
 
 	@property
 	def spanline(self):
