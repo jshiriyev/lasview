@@ -1,3 +1,5 @@
+import copy
+
 from dataclasses import dataclass, field
 
 import os
@@ -53,9 +55,12 @@ class Frame:
 
 class Trails():
 
-	def __init__(self,filename:str,htmlname:str=None,ymin:float=None,ymax:float=None,**kwargs):
+	def __init__(self,filename:str,htmlname:str=None,ymin:float=None,ymax:float=None,mnems:list=None,**kwargs):
 
 		self.file = lasio.read(filename,**kwargs)
+
+		if mnems is not None:
+			self.select(mnems)
 
 		self.trimdepth(ymin,ymax)
 
@@ -71,9 +76,34 @@ class Trails():
 		return self._file
 
 	@file.setter
-	def file(self,value:lasio.LASFile):
-		value.curves = [curve for curve in value.curves if value[curve.mnemonic].dtype == float]
-		self._file = value
+	def file(self,lasfile:lasio.LASFile):
+		lasfile.curves = [curve for curve in lasfile.curves if lasfile[curve.mnemonic].dtype == float]
+		self._file = lasfile
+
+	def select(self,mnemonics:list):
+
+		file = self.header()
+
+		depth = self._file.curves[0].mnemonic
+
+		if depth in mnemonics:
+			mnemonics.remove(depth)
+			
+		mnemonics.insert(0,depth)
+
+		for mnem in mnemonics:
+
+		    curve = self._file[mnem]
+
+		    file.append_curve(
+		    	curve.mnemonic,curve.data,unit=curve.unit,descr=curve.descr)
+
+		self._file = file
+
+	def delete(self,*args):
+
+		for key in args:
+			self._file.delete_curve(key)
 
 	@property
 	def filename(self):
@@ -103,24 +133,30 @@ class Trails():
 		if ymax is None:
 			ymax = self.maxdepth
 
-		return (self.depths>=ymin)&(self.depths<=ymax)
+		return numpy.logical_and(self.depths>=ymin,self.depths<=ymax)
 
 	def trimdepth(self,ymin:float=None,ymax:float=None):
 
 		mask = self.maskdepth(ymin,ymax)
 
-		# curve = self.file.curves[0]
-		# print("FILE",type(self.file),self.file)
-		# print("MASK",type(mask),mask)
-		# print("CURVE",type(curve),curve)
-		# print("FILE[CURVE.MNEMONIC]",type(self.file[curve.mnemonic]),self.file[curve.mnemonic])
+		file = self.header()
 
-		# print(self.file.curves)
-		# print(mask)
+		for curve in self._file.curves:
 
-		# self.file.curves = [curve for curve in self.file.curves]
+			file.append_curve(
+				curve.mnemonic,curve.data[mask],unit=curve.unit,descr=curve.descr)
 
-		self.file.curves = [self.file.curvesdict[curve.mnemonic][mask] for curve in self.file.curves]
+		self._file = file
+
+	def header(self):
+		"""Returns the LASFile with only header section of the original file."""
+		file = lasio.LASFile()
+
+		file.well = self._file.well
+		file.params = self._file.params
+		file.version = self._file.version
+
+		return file
 
 	@property
 	def spanline(self):
@@ -343,7 +379,7 @@ class Trails():
 
 		power = 1 if numpy.isnan(xvalue) else -int(numpy.floor(numpy.log10(xvalue)))
 
-		xtips = "@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}"
+		xtips = "@x{0.000}" if power<1 else "@x{0."+"0"*(power+2)+"}"
 
 		dunit = self.file.curves[0].unit
 
