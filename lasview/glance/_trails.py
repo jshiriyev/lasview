@@ -1,3 +1,5 @@
+import copy
+
 from dataclasses import dataclass, field
 
 import os
@@ -109,7 +111,11 @@ class Trails():
 
 		mask = self.maskdepth(ymin,ymax)
 
-		self._file.curves = [self._file[curve.mnemonic][mask] for curve in self._file.curves]
+		file = copy.deepcopy(self._file)
+
+		file.curves = [file[curve.mnemonic][mask] for curve in file.curves]
+
+		self._file = file
 
 	@property
 	def spanline(self):
