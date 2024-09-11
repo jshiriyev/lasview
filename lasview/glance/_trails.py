@@ -302,9 +302,11 @@ class Trails():
 
 	def hintbody(self,figure:bokeh_figure,index:int):
 
-		xvalue = numpy.nanmin(numpy.abs(self.file[index]))
+		xarray = numpy.abs(self.file[index])
 
-		power = -int(numpy.floor(numpy.log10(xvalue))) if xvalue!=0 else 1
+		xvalue = numpy.nanmin(xarray[xarray!=0])
+
+		power = -int(numpy.floor(numpy.log10(xvalue)))
 
 		xtips = "@x{0.00}" if power<1 else "@x{0."+"0"*(power+1)+"}"
 
