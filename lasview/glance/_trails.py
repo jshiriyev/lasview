@@ -55,14 +55,14 @@ class Frame:
 
 class Trails():
 
-	def __init__(self,filename:str,htmlname:str=None,ymin:float=None,ymax:float=None,mnems:list=None,**kwargs):
+	def __init__(self,filename:str,htmlname:str=None,mindepth:float=None,maxdepth:float=None,mnemonics:list=None,**kwargs):
 
 		self.file = lasio.read(filename,**kwargs)
 
-		if mnems is not None:
-			self.select(mnems)
+		self.mindepth = mindepth
+		self.maxdepth = maxdepth
 
-		self.trimdepth(ymin,ymax)
+		self.select(mnemonics)
 
 		self.filename = filename
 		self.htmlname = htmlname
@@ -80,38 +80,64 @@ class Trails():
 		lasfile.curves = [curve for curve in lasfile.curves if lasfile[curve.mnemonic].dtype == float]
 		self._file = lasfile
 
+	@property
+	def lasheader(self):
+		"""Returns the LASFile with only header section of the original file."""
+		file = lasio.LASFile()
+
+		keys = [section for section in self._file.sections if section!="Curves"]
+
+		for key in keys:
+			file.sections[key] = self._file.sections[key]
+
+		return file
+
+	@property
+	def depths(self):
+		return self.file[0]
+
+	@property
+	def maxdepth(self):
+		return self._maxdepth
+
+	@maxdepth.setter
+	def maxdepth(self,value:float):
+		self._maxdepth = numpy.nanmax(self.depths) if value is None else value
+
+	@property
+	def mindepth(self):
+		return self._mindepth
+
+	@mindepth.setter
+	def mindepth(self,value:float):
+		self._mindepth = numpy.nanmin(self.depths) if value is None else value
+
+	@property
+	def depth(self):
+		return self.maxdepth-self.mindepth
+
 	def select(self,mnemonics:list):
 
-		file = self.header()
+		if mnemonics is None:
+			return
 
-		depth = self._file.curves[0].mnemonic
+		file = self.lasheader
 
-		if depth in mnemonics:
-			mnemonics.remove(depth)
+		mnem = self._file.curves[0].mnemonic
+
+		if mnem in mnemonics:
+			mnemonics.remove(mnem)
 			
-		mnemonics.insert(0,depth)
+		mnemonics.insert(0,mnem)
 
-		for mnem in mnemonics:
+		for head in mnemonics:
 
-		    curve = self._file[mnem]
+		    curve = self._file.curves[self.index(head)+1]
 
 		    file.append_curve(
 		    	curve.mnemonic,curve.data,unit=curve.unit,descr=curve.descr)
 
 		self._file = file
-
-	def delete(self,*args):
-
-		for key in args:
-			self._file.delete_curve(key)
-
-	@property
-	def filename(self):
-		return self._filename
-
-	@filename.setter
-	def filename(self,value:str):
-		self._filename = value
 	
 	@property
 	def htmlname(self):
@@ -125,38 +151,12 @@ class Trails():
 		
 		self._htmlname = os.path.splitext(value)[0]+'.html'
 
-	def maskdepth(self,ymin:float=None,ymax:float=None):
+	@property
+	def curves(self):
+		return len(self.file.keys())-1
 
-		if ymin is None:
-			ymin = self.mindepth
-
-		if ymax is None:
-			ymax = self.maxdepth
-
-		return numpy.logical_and(self.depths>=ymin,self.depths<=ymax)
-
-	def trimdepth(self,ymin:float=None,ymax:float=None):
-
-		mask = self.maskdepth(ymin,ymax)
-
-		file = self.header()
-
-		for curve in self._file.curves:
-
-			file.append_curve(
-				curve.mnemonic,curve.data[mask],unit=curve.unit,descr=curve.descr)
-
-		self._file = file
-
-	def header(self):
-		"""Returns the LASFile with only header section of the original file."""
-		file = lasio.LASFile()
-
-		file.well = self._file.well
-		file.params = self._file.params
-		file.version = self._file.version
-
-		return file
+	def index(self,key):
+		return self.file.keys().index(key)-1
 
 	@property
 	def spanline(self):
@@ -165,32 +165,6 @@ class Trails():
 	@spanline.setter
 	def spanline(self,value:dict):
 		self._spanline = Span(**value)
-
-	def __getitem__(self,key):
-		return self.file[key]
-
-	def index(self,key):
-		return self.file.keys().index(key)-1
-
-	@property
-	def curves(self):
-		return len(self.file.keys())-1
-
-	@property
-	def depths(self):
-		return self.file[0]
-
-	@property
-	def maxdepth(self):
-		return numpy.nanmax(self.depths)
-
-	@property
-	def mindepth(self):
-		return numpy.nanmin(self.depths)
-
-	@property
-	def depth(self):
-		return int(self.maxdepth-self.mindepth)
 
 	def build(self,wdict:dict=None,**kwargs):
 
@@ -216,7 +190,7 @@ class Trails():
 	
 	@property
 	def height(self):
-		return (self.frame.head_height,self.frame.body_height*self.depth)
+		return (self.frame.head_height,self.frame.body_height*int(self.depth))
 	
 	def prephead(self,index):
 
@@ -359,7 +333,7 @@ class Trails():
 					label.visible = true;
 				}
 				label.y = y;
-				label.text = `${y.toFixed(1)}`;
+				label.text = `${y.toFixed(2)}`;
 				"""),
 		)
 
