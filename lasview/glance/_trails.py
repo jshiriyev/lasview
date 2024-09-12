@@ -388,9 +388,9 @@ class Trails():
 
 	def color(self,key:str,cut:float,left:bool=True,**kwargs):
 
-		conds = self.curve[key]<cut if left else self.curve[key]>cut
+		conds = self.curve(key).data<cut if left else self.curve(key).data>cut
 
-		z1 = numpy.where(conds,self.curve[key],cut)
+		z1 = numpy.where(conds,self.curve(key).data,cut)
 		z2 = numpy.full_like(z1,cut)
 
 		x1 = z1 if left else z2
@@ -414,7 +414,7 @@ class Trails():
 
 	def overlay(self,key:str,tokey:str,multp:float=1,shift:float=0,line:dict=None,left:bool=None,**kwargs):
 
-		value = self.curve[key]*multp+shift
+		value = self.curve(key).data*multp+shift
 
 		style = {f"line_{name}":value for name,value in (line or {}).items()}
 
@@ -423,10 +423,10 @@ class Trails():
 		if left is None:
 			return
 
-		conds = value<self.curve[tokey] if left else value>self.curve[tokey]
+		conds = value<self.curve(tokey).data if left else value>self.curve(tokey).data
 
-		z1 = numpy.where(conds,value,self.curve[tokey])
-		z2 = numpy.full_like(z1,self.curve[tokey])
+		z1 = numpy.where(conds,value,self.curve(tokey).data)
+		z2 = numpy.full_like(z1,self.curve(tokey).data)
 
 		x1 = z1 if left else z2
 		x2 = z2 if left else z1
